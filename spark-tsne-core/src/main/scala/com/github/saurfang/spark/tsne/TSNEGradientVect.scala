@@ -34,7 +34,7 @@ object TSNEGradientVect {
    * @param Y           降维后矩阵
    * @param proportions 图的权重矩阵
    * @param no_dims     降维后的维度
-   * @param no_maps     图的数量
+   * @param no_maps     图的
    * @param idx         i
    */
 
@@ -138,7 +138,7 @@ object TSNEGradientVect {
   //dCdP = 2 * dCdP
 
   //  dCdW = proportions .* bsxfun(@minus, sum(dCdP .* proportions, 2), dCdP);
-  val dCdP = 2.0 * DenseVector(numer.zipWithIndex.map(arr => ComputedCdP(proportions(::, arr._2),arr._1,tmpPQ)).toArray) //+ laplace * (proportions.t * L)
+  val dCdP = 2.0 * DenseVector(numer.zipWithIndex.map(arr => ComputedCdP(proportions(::, arr._2),arr._1,tmpPQ)).toArray) + laplace * (proportions.t * L)
   //  no_maps个元素
   //dCdW = proportions .* bsxfun(@minus, sum(dCdP .* proportions, 2), dCdP);%代价函数对权重wi的更新
   val dCdW: DenseVector[Double] = proportions(idx, ::).t :* (sum(dCdP :* proportions(idx, ::).t) - dCdP)
@@ -176,6 +176,7 @@ object TSNEGradientVect {
  }
 
  def GetL(P: (Int, Iterable[(Int, Double)]),n : Int): DenseVector[Double] = {
+  // 每一行所有的元素求和, 放在对角线上然后减去这一行上所有元素
   val value = P._2.aggregate(0.0)(
    seqop = (c,v) => c + v._2,
    combop = _ + _

@@ -1,13 +1,8 @@
-package com.github.saurfang.spark.tsne.examples
-
-
-
-
+package example
 
 import com.github.saurfang.spark.tsne.impl._
-import org.apache.spark.mllib.X2PHelper
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.linalg.distributed.{IndexedRow, IndexedRowMatrix, RowMatrix}
+import org.apache.spark.mllib.linalg.distributed.RowMatrix
 import org.apache.spark.{SparkConf, SparkContext}
 import org.slf4j.LoggerFactory
 
@@ -18,6 +13,7 @@ object MNIST {
     val conf = new SparkConf()
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val fileName = args(0)
+    logger.debug(args(0))
     val sc = new SparkContext(conf)
     val dataset = sc.textFile(fileName,32)
       .zipWithIndex()

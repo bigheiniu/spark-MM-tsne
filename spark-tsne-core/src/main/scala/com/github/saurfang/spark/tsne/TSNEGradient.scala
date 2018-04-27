@@ -18,24 +18,25 @@ object TSNEGradient {
   def computeNumerator(Y: DenseMatrix[Double], idx: Int *): DenseMatrix[Double] = {
     // Y_sum = ||Y_i||^2
     val sumY = sum(pow(Y, 2).apply(*, ::)) // n * 1
-    val subY = Y(idx, ::).toDenseMatrix // k * n
+    val subY = Y(idx, ::).toDenseMatrix // k * 1
     val y1: DenseMatrix[Double] = Y * (-2.0 :* subY.t) // n * k
     val num: DenseMatrix[Double] = (y1(::, *) + sumY).t // k * n
     num := 1.0 :/ (1.0 :+ (num(::, *) + sumY(idx).toDenseVector)) // k * n
+
     idx.indices.foreach(i => num.update(i, idx(i), 0.0)) // num(i, i) = 0
 
     num
   }
 
   /**
-   * Compute the TSNE Gradient at i. Update the gradient through dY then return costs attributed at i.
-   *
-   * @param data data point for row i by list of pair of (j, p_ij) and 0 <= j < n
-   * @param Y current Y [n * 2]
-   * @param totalNum the common numerator that captures the t-distribution of Y
-   * @param dY gradient of Y
-   * @return loss attributed to row i
-   */
+    * Compute the TSNE Gradient at i. Update the gradient through dY then return costs attributed at i.
+    *
+    * @param data data point for row i by list of pair of (j, p_ij) and 0 <= j < n
+    * @param Y current Y [n * 2]
+    * @param totalNum the common numerator that captures the t-distribution of Y
+    * @param dY gradient of Y
+    * @return loss attributed to row i
+    */
   def compute(
                data: Array[(Int, Iterable[(Int, Double)])],
                Y: DenseMatrix[Double],
@@ -63,24 +64,13 @@ object TSNEGradient {
     // l = [ (p_ij - q_ij) * (1 + ||Y_i - Y_j||^2)^-1 ]
     q :*= -num
     // l_sum = [0 0 ... sum(l) ... 0]
-
     sum(q(*, ::)).foreachPair{ case (i, v) => q.update(i, data(i)._1, q(i, data(i)._1) - v) }
-    val n = Y.rows
-    val len = data.length
-    val cols = Y.cols
-    // dY_i = -4 * (l - l_sum) * Y
-//    val dYi: DenseMatrix[Double] = DenseMatrix.fill(len,cols){0.0}
-    val index = data.map(_._1)
-    index.zipWithIndex.foreach(arr => {
-      val rows = arr._1
-      val idx = arr._2
-      val th = sum((tile(q(idx,::).t,1,Y.cols) :* (tile(Y(rows,::),1,n) - Y)).apply(::,*))
-      dY(rows,::) := th
-    })
-//    data.map(_._1).zipWithIndex.foreach{
-//      case (i, idx) => dY(i, ::) := dYi(idx, ::)
-//    }
 
+    // dY_i = -4 * (l - l_sum) * Y
+    val dYi: DenseMatrix[Double] = -4.0 :* (q * Y)
+    data.map(_._1).zipWithIndex.foreach{
+      case (i, idx) => dY(i, ::) := dYi(idx, ::)
+    }
 
     loss
   }
@@ -88,14 +78,14 @@ object TSNEGradient {
   /** BH Tree related functions **/
 
   /**
-   *
-   * @param data array of (row_id, Seq(col_id), Vector(P_ij))
-   * @param Y matrix
-   * @param posF positive forces
-   */
+    *
+    * @param data array of (row_id, Seq(col_id), Vector(P_ij))
+    * @param Y matrix
+    * @param posF positive forces
+    */
   def computeEdgeForces(data: Array[(Int, Seq[Int], DenseVector[Double])],
-              Y: DenseMatrix[Double],
-              posF: DenseMatrix[Double]): Unit = {
+                        Y: DenseMatrix[Double],
+                        posF: DenseMatrix[Double]): Unit = {
     data.foreach {
       case (i, cols, vec) =>
         // k x D - 1 x D  => k x D
@@ -115,15 +105,15 @@ object TSNEGradient {
   }
 
   /**
-   * Calcualte negative forces using BH approximation
-   *
-   * @param tree SPTree used for approximation
-   * @param y y_i
-   * @param theta threshold for correctness / speed
-   * @param negF negative forces
-   * @param i row
-   * @return sum of Q
-   */
+    * Calcualte negative forces using BH approximation
+    *
+    * @param tree SPTree used for approximation
+    * @param y y_i
+    * @param theta threshold for correctness / speed
+    * @param negF negative forces
+    * @param i row
+    * @return sum of Q
+    */
   private def computeNonEdgeForce(tree: SPTree,
                                   y: DenseVector[Double],
                                   theta: Double,

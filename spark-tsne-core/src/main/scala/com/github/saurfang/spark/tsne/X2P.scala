@@ -69,7 +69,7 @@ object X2P {
           (arr.map(_._1).zip(p.toArray).map { case (j, v) => MatrixEntry(i, j, v) }, beta)
       }
 
-    logger.info("Mean value of sigma: " + p_betas.map(x => math.sqrt(1 / x._2)).mean)
+    logger.debug("Mean value of sigma: " + p_betas.map(x => math.sqrt(1 / x._2)).mean)
     new CoordinateMatrix(p_betas.flatMap(_._1))
   }
 }

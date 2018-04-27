@@ -16,5 +16,3 @@ lazy val examples = tsneProject("spark-tsne-examples").
   settings(Dependencies.core).
   settings(SparkSubmit.settings: _*)
 
- libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.0"
-libraryDependencies += "org.apache.spark" %% "spark-mllib" % "2.1.0"
