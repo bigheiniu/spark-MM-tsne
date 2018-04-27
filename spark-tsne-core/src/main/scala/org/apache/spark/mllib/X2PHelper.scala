@@ -24,4 +24,7 @@ object X2PHelper {
       (H, P / sumP)
     }
   }
+  def mean(array: Array[Double]): Double = {
+    array.sum / array.length * 1.0d
+  }
 }

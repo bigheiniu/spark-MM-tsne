@@ -18,11 +18,10 @@ object TSNEGradient {
   def computeNumerator(Y: DenseMatrix[Double], idx: Int *): DenseMatrix[Double] = {
     // Y_sum = ||Y_i||^2
     val sumY = sum(pow(Y, 2).apply(*, ::)) // n * 1
-    val subY = Y(idx, ::).toDenseMatrix // k * 1
+    val subY = Y(idx, ::).toDenseMatrix // k * n
     val y1: DenseMatrix[Double] = Y * (-2.0 :* subY.t) // n * k
     val num: DenseMatrix[Double] = (y1(::, *) + sumY).t // k * n
     num := 1.0 :/ (1.0 :+ (num(::, *) + sumY(idx).toDenseVector)) // k * n
-
     idx.indices.foreach(i => num.update(i, idx(i), 0.0)) // num(i, i) = 0
 
     num
@@ -64,13 +63,24 @@ object TSNEGradient {
     // l = [ (p_ij - q_ij) * (1 + ||Y_i - Y_j||^2)^-1 ]
     q :*= -num
     // l_sum = [0 0 ... sum(l) ... 0]
-    sum(q(*, ::)).foreachPair{ case (i, v) => q.update(i, data(i)._1, q(i, data(i)._1) - v) }
 
+    sum(q(*, ::)).foreachPair{ case (i, v) => q.update(i, data(i)._1, q(i, data(i)._1) - v) }
+    val n = Y.rows
+    val len = data.length
+    val cols = Y.cols
     // dY_i = -4 * (l - l_sum) * Y
-    val dYi: DenseMatrix[Double] = -4.0 :* (q * Y)
-    data.map(_._1).zipWithIndex.foreach{
-      case (i, idx) => dY(i, ::) := dYi(idx, ::)
-    }
+//    val dYi: DenseMatrix[Double] = DenseMatrix.fill(len,cols){0.0}
+    val index = data.map(_._1)
+    index.zipWithIndex.foreach(arr => {
+      val rows = arr._1
+      val idx = arr._2
+      val th = sum((tile(q(idx,::).t,1,Y.cols) :* (tile(Y(rows,::),1,n) - Y)).apply(::,*))
+      dY(rows,::) := th
+    })
+//    data.map(_._1).zipWithIndex.foreach{
+//      case (i, idx) => dY(i, ::) := dYi(idx, ::)
+//    }
+
 
     loss
   }
